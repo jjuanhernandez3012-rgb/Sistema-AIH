@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema IAH</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #ecf0f1; padding: 20px; color: #2c3e50; }
+        .container { background-color: white; padding: 25px; border-radius: 10px; box-shadow: 0 5px 20px rgba(0,0,0,0.15); max-width: 1250px; margin: auto; }
+        h2 { text-align: center; color: #2c3e50; margin-bottom: 20px; font-size: 28px; }
+        
+        .tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; border-bottom: 3px solid #bdc3c7; padding-bottom: 10px; }
+        .tab-btn { padding: 12px 25px; font-size: 16px; font-weight: bold; border: none; border-radius: 8px 8px 0 0; cursor: pointer; transition: 0.3s; background-color: #e0e0e0; color: #7f8c8d; }
+        .tab-btn:hover { background-color: #bdc3c7; }
+        .tab-btn.active-dovelas { background-color: #2980b9; color: white; }
+        .tab-btn.active-excel { background-color: #8e44ad; color: white; }
+        
+        .tab-content { display: none; animation: fadeIn 0.5s; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #bdc3c7; padding: 10px; text-align: center; vertical-align: middle; }
+        .th-dovelas { background-color: #2980b9; color: white; font-size: 14px; }
+        .th-excel { background-color: #8e44ad; color: white; font-size: 14px; }
+        
+        input { text-align: center; border: 1px solid #95a5a6; border-radius: 4px; padding: 6px; font-weight: bold; }
+        .w-70 { width: 70px; }
+        .w-40 { width: 45px; }
+
+        .vel-container-e { display: flex; flex-direction: column; gap: 4px; width: 150px; margin: auto;}
+        .flex-row { display: flex; justify-content: center; align-items: center; gap: 5px; }
+        
+        .info-prof { font-size: 13px; color: #34495e; background: #ecf0f1; padding: 10px; border-radius: 6px; text-align: left; display: inline-block; min-width: 140px; margin-top: 5px; border: 1px dashed #bdc3c7;}
+        .metodo-text { font-size: 12px; font-weight: bold; color: #c0392b; margin-top: 5px; display: block; }
+
+        .btn-group { margin-top: 25px; display: flex; gap: 15px; }
+        .btn-main { flex: 1; padding: 15px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; color: white; font-weight: bold; text-transform: uppercase; transition: 0.3s; }
+        .btn-add-d { background-color: #27ae60; }
+        .btn-calc-d { background-color: #d35400; }
+        .btn-add-e { background-color: #16a085; }
+        .btn-calc-e { background-color: #8e44ad; }
+        .btn-delete { background-color: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+
+        .resultados { margin-top: 30px; padding: 25px; background-color: #f8f9f9; border-left: 6px solid #2c3e50; border-radius: 8px; display: none; font-size: 16px; }
+        .lista-resultados { list-style: none; padding-left: 0; }
+        .lista-resultados li { padding: 8px 0; border-bottom: 1px dashed #bdc3c7; }
+        .lista-resultados li:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <h2>Sistema Integral de Aforo Hidráulico</h2>
+    <h4 style="text-align: center;">Juan Jose Hernandez Ortiz</h4>
+    
+    <div class="tabs">
+        <button class="tab-btn active-dovelas" id="btnTabDovelas" onclick="switchTab('Dovelas')">Modo 1</button>
+        <button class="tab-btn" id="btnTabExcel" onclick="switchTab('Excel')">Modo 2</button>
+    </div>
+
+    <!-- MODO 1: DOVELAS -->
+    <div id="tabDovelas" class="tab-content active">
+        <p><strong>Uso:</strong> Para ejercicios donde te dan límites h1 y h2. La velocidad trabaja a X distancia dentro de la dovela.</p>
+        <table id="tablaDovelas">
+            <thead>
+                <tr>
+                    <th class="th-dovelas">Tramo</th>
+                    <th class="th-dovelas">W (m)</th>
+                    <th class="th-dovelas">h1 (m)</th>
+                    <th class="th-dovelas">h2 (m)</th>
+                    <th class="th-dovelas">Datos de Molinete<br><small>Fracción h ➔ Velocidad</small></th>
+                    <th class="th-dovelas">Info Profundidades (m)</th>
+                    <th class="th-dovelas">Método Geométrico</th>
+                    <th class="th-dovelas">Acción</th>
+                </tr>
+            </thead>
+            <tbody id="cuerpoDovelas"></tbody>
+        </table>
+        <div class="btn-group">
+            <button class="btn-main btn-add-d" onclick="agregarFilaDovelas()">+ Añadir Tramo</button>
+            <button class="btn-main btn-calc-d" onclick="calcularDovelas()">Calcular Parametros</button>
+        </div>
+    </div>
+
+    <!-- MODO 2: EXCEL PROFESOR -->
+    <div id="tabExcel" class="tab-content">
+        <p><strong>Uso:</strong> Ingresa una sola profundidad h por vertical. La velocidad es tomada en la division de las dovelas.</p>
+        <table id="tablaExcel">
+            <thead>
+                <tr>
+                    <th class="th-excel">N° Vertical</th>
+                    <th class="th-excel">Wi (m)</th>
+                    <th class="th-excel">h (m)</th>
+                    <th class="th-excel">Datos de Molinete<br><small>Fracción h ➔ Velocidad</small></th>
+                    <th class="th-excel">Info Sub-Áreas (m²)</th>
+                    <th class="th-excel">Acción</th>
+                </tr>
+            </thead>
+            <tbody id="cuerpoExcel"></tbody>
+        </table>
+        <div class="btn-group">
+            <button class="btn-main btn-add-e" onclick="agregarFilaExcel()">+ Añadir Vertical</button>
+            <button class="btn-main btn-calc-e" onclick="calcularExcel()">Calcular Parametros</button>
+        </div>
+    </div>
+
+    <!-- RESULTADOS -->
+    <div class="resultados" id="panelResultados">
+        <h3 style="margin-top: 0; font-size: 22px;" id="tituloResultados">Resultados Analíticos:</h3>
+        <ul class="lista-resultados">
+            <li><strong>1. Área hidráulica (A):</strong> <span id="resA"></span> m²</li>
+            <li><strong>2. Ancho superficial (T):</strong> <span id="resT"></span> m</li>
+            <li><strong>3. Perímetro mojado (P):</strong> <span id="resP"></span> m</li>
+            <li><strong>4. Radio hidráulico (Rh):</strong> <span id="resRh"></span> m</li>
+            <li><strong>5. Profundidad hidráulica (D):</strong> <span id="resD"></span> m</li>
+            <li><strong>6. Caudal total de la corriente (Q):</strong> <strong style="color: #27ae60; font-size: 18px;"><span id="resQ"></span> m³/s</strong></li>
+            <li><strong>7. Velocidad media de la sección (Vm):</strong> <span id="resVm"></span> m/s</li>
+            <li><strong>8. Coeficiente de Coriolis (α):</strong> <strong style="color: #d35400;"><span id="resAlpha"></span></strong></li>
+            <li><strong>9. Coeficiente de Boussinesq (β):</strong> <span id="resBeta"></span></li>
+            <li><strong>10. Número de Froude (Fr):</strong> <span id="resFroude"></span></li>
+            <li><strong>11. Clasificación del régimen:</strong> <strong style="color: #c0392b;" id="resRegimen"></strong></li>
+        </ul>
+    </div>
+</div>
+
+<script>
+    window.onload = function() {
+        for(let i=0; i<1; i++) agregarFilaDovelas();
+        for(let i=0; i<1; i++) agregarFilaExcel();
+    };
+
+    function switchTab(modo) {
+        document.getElementById('tabDovelas').classList.remove('active');
+        document.getElementById('tabExcel').classList.remove('active');
+        document.getElementById('btnTabDovelas').classList.remove('active-dovelas');
+        document.getElementById('btnTabExcel').classList.remove('active-excel');
+        document.getElementById('panelResultados').style.display = 'none';
+
+        if(modo === 'Dovelas') {
+            document.getElementById('tabDovelas').classList.add('active');
+            document.getElementById('btnTabDovelas').classList.add('active-dovelas');
+        } else {
+            document.getElementById('tabExcel').classList.add('active');
+            document.getElementById('btnTabExcel').classList.add('active-excel');
+        }
+    }
+
+    // ================= MODO 1: DOVELAS =================
+    function agregarFilaDovelas() {
+        let tbody = document.getElementById("cuerpoDovelas");
+        let num = tbody.children.length + 1;
+        let fila = document.createElement("tr");
+        fila.innerHTML = `
+            <td class="num-tr"><strong>${num}</strong></td>
+            <td><input type="number" step="0.01" class="w-70 v-w"></td>
+            <td><input type="number" step="0.01" class="w-70 v-h1" oninput="actualizarUIDovelas(this)"></td>
+            <td><input type="number" step="0.01" class="w-70 v-h2" oninput="actualizarUIDovelas(this)"></td>
+            <td>
+                <div class="vel-container-e">
+                    <div class="flex-row"><input type="number" step="0.01" class="w-40 d-f1" placeholder="0.2" oninput="actualizarUIDovelas(this)"><span style="font-size:12px;color:#7f8c8d;">h ➔</span><input type="number" step="0.001" class="w-70 d-v1" placeholder="V1"></div>
+                    <div class="flex-row"><input type="number" step="0.01" class="w-40 d-f2" placeholder="0.8" oninput="actualizarUIDovelas(this)"><span style="font-size:12px;color:#7f8c8d;">h ➔</span><input type="number" step="0.001" class="w-70 d-v2" placeholder="V2"></div>
+                    <div class="flex-row"><input type="number" step="0.01" class="w-40 d-f3" placeholder="0.6" oninput="actualizarUIDovelas(this)"><span style="font-size:12px;color:#7f8c8d;">h ➔</span><input type="number" step="0.001" class="w-70 d-v3" placeholder="V3"></div>
+                    <div class="flex-row"><input type="number" step="0.01" class="w-40 d-f4" placeholder="0.4" oninput="actualizarUIDovelas(this)"><span style="font-size:12px;color:#7f8c8d;">h ➔</span><input type="number" step="0.001" class="w-70 d-v4" placeholder="V4"></div>
+                </div>
+            </td>
+            <td><div class="info-prof d-info">Esperando datos...</div></td>
+            <td><span class="metodo-text">-</span></td>
+            <td><button class="btn-delete" onclick="this.closest('tr').remove(); renum('cuerpoDovelas')">X</button></td>
+        `;
+        tbody.appendChild(fila);
+    }
+
+    function actualizarUIDovelas(elemento) {
+        let fila = elemento.closest("tr");
+        let h1 = parseFloat(fila.querySelector(".v-h1").value);
+        let h2 = parseFloat(fila.querySelector(".v-h2").value);
+        
+        if (!isNaN(h1) && !isNaN(h2)) {
+            let hLocal = (h1 + h2) / 2; 
+            let htmlInfo = `<strong style="color:#2980b9;">h_local = ${hLocal.toFixed(3)} m</strong><br>`;
+            
+            for (let k = 1; k <= 4; k++) {
+                let inF = fila.querySelector(".d-f" + k);
+                let frac = inF.value !== "" ? parseFloat(inF.value) : parseFloat(inF.placeholder);
+                htmlInfo += `${frac}h = ${(hLocal * frac).toFixed(3)} m<br>`;
+            }
+            fila.querySelector(".d-info").innerHTML = htmlInfo;
+            
+            let metodo = fila.querySelector(".metodo-text");
+            if (h1 === 0 || h2 === 0) { metodo.innerHTML = "📐 Integración<br>Franjas"; metodo.style.color = "#c0392b"; } 
+            else { metodo.innerHTML = "🟦 Promedio<br>Aritmético"; metodo.style.color = "#27ae60"; }
+        }
+    }
+
+    function calcularDovelas() {
+        let filas = document.querySelectorAll("#cuerpoDovelas tr");
+        let A_tot=0, Q_tot=0, T_tot=0, P_tot=0, Cor_tot=0, Bous_tot=0;
+        
+        for (let f of filas) {
+            let w = parseFloat(f.querySelector(".v-w").value) || 0;
+            let h1 = parseFloat(f.querySelector(".v-h1").value) || 0;
+            let h2 = parseFloat(f.querySelector(".v-h2").value) || 0;
+            
+            let pares = [];
+            for(let k=1; k<=4; k++) {
+                let v_val = f.querySelector(".d-v"+k).value;
+                if(v_val !== "") {
+                    let inF = f.querySelector(".d-f"+k);
+                    let frac = inF.value !== "" ? parseFloat(inF.value) : parseFloat(inF.placeholder);
+                    pares.push({ f: frac, v: parseFloat(v_val) });
+                }
+            }
+            pares.sort((a,b) => a.f - b.f);
+
+            let area = ((h1 + h2) / 2) * w;
+            let perim = Math.sqrt(w*w + Math.pow(h2 - h1, 2));
+            let vm = 0;
+            
+            if (pares.length === 4) {
+                if (h1 === 0 || h2 === 0) vm = pares[0].v * 0.51 + pares[1].v * 0.24 + pares[2].v * 0.16 + pares[3].v * 0.09;
+                else vm = (pares[0].v + pares[1].v + pares[2].v + pares[3].v) / 4;
+            } else if (pares.length > 0) {
+                vm = pares.reduce((sum, item) => sum + item.v, 0) / pares.length;
+            }
+
+            A_tot += area; T_tot += w; P_tot += perim; Q_tot += area * vm;
+            Cor_tot += area * Math.pow(vm, 3); Bous_tot += area * Math.pow(vm, 2);
+        }
+        mostrarResultados(A_tot, T_tot, P_tot, Q_tot, Cor_tot, Bous_tot, "Resultados");
+    }
+
+    // ================= MODO 2: EXCEL AVANZADO =================
+    function agregarFilaExcel() {
+        let tbody = document.getElementById("cuerpoExcel");
+        let num = tbody.children.length + 1;
+        let fila = document.createElement("tr");
+        fila.innerHTML = `
+            <td class="num-tr"><strong>${num}</strong></td>
+            <td><input type="number" step="0.001" class="w-70 e-w"></td>
+            <td><input type="number" step="0.001" class="w-70 e-h"></td>
+            <td>
+                <div class="vel-container-e">
+                    <div class="flex-row"><input type="number" step="0.01" class="w-40 e-f1" placeholder="0.2"><span style="font-size:12px;color:#7f8c8d;">h ➔</span><input type="number" step="0.001" class="w-70 e-v1" placeholder="V1"></div>
+                    <div class="flex-row"><input type="number" step="0.01" class="w-40 e-f2" placeholder="0.8"><span style="font-size:12px;color:#7f8c8d;">h ➔</span><input type="number" step="0.001" class="w-70 e-v2" placeholder="V2"></div>
+                    <div class="flex-row"><input type="number" step="0.01" class="w-40 e-f3" placeholder="0.6"><span style="font-size:12px;color:#7f8c8d;">h ➔</span><input type="number" step="0.001" class="w-70 e-v3" placeholder="V3"></div>
+                    <div class="flex-row"><input type="number" step="0.01" class="w-40 e-f4" placeholder="0.4"><span style="font-size:12px;color:#7f8c8d;">h ➔</span><input type="number" step="0.001" class="w-70 e-v4" placeholder="V4"></div>
+                </div>
+            </td>
+            <td><div class="info-prof e-info">Sub-Áreas: 0 m²</div></td>
+            <td><button class="btn-delete" onclick="this.closest('tr').remove(); renum('cuerpoExcel')">X</button></td>
+        `;
+        tbody.appendChild(fila);
+    }
+
+    // ALGORITMO MAESTRO DE INTEGRACIÓN CON FONDO IRREGULAR
+    function areaRebanada(w, h_c, h_b, y1, y2) {
+        if (y1 >= y2 || w <= 0) return 0;
+        let y_min = Math.min(h_c, h_b);
+        let y_max = Math.max(h_c, h_b);
+        
+        let real_y1 = Math.min(y1, y_max);
+        let real_y2 = Math.min(y2, y_max);
+        if (real_y1 >= real_y2) return 0;
+
+        let area = 0;
+        
+        // Volumen rectangular
+        if (real_y1 < y_min) {
+            let end_rect = Math.min(real_y2, y_min);
+            area += w * (end_rect - real_y1);
+        }
+        
+        // Volumen en la pendiente del fondo
+        let start_tri = Math.max(real_y1, y_min);
+        if (start_tri < real_y2) {
+            let w_start = w * (y_max - start_tri) / (y_max - y_min);
+            let w_end = w * (y_max - real_y2) / (y_max - y_min);
+            area += (w_start + w_end) / 2 * (real_y2 - start_tri);
+        }
+        return area;
+    }
+
+    function calcularExcel() {
+        let filas = document.querySelectorAll("#cuerpoExcel tr");
+        let numF = filas.length;
+        let w = [], h = [];
+        for(let f of filas) {
+            w.push(parseFloat(f.querySelector(".e-w").value) || 0);
+            h.push(parseFloat(f.querySelector(".e-h").value) || 0);
+        }
+
+        let A_tot=0, T_tot=0, P_tot=0, Q_tot=0, Cor_tot=0, Bous_tot=0;
+        
+        for(let i=0; i<numF; i++) {
+            let hp = (i === 0) ? 0 : h[i-1];
+            A_tot += ((hp + h[i]) / 2) * w[i];
+            P_tot += Math.sqrt(Math.pow(w[i], 2) + Math.pow(h[i] - hp, 2));
+            T_tot += w[i];
+        }
+
+        let lastIdx = -1;
+        for(let i = numF - 1; i >= 0; i--) {
+            if ([1,2,3,4].some(k => filas[i].querySelector(".e-v"+k).value !== "")) { lastIdx = i; break; }
+        }
+
+        for(let i=0; i <= lastIdx; i++) {
+            let hc = h[i], wc = w[i];
+            if (hc === 0) continue;
+            
+            let wn = (i+1 < numF) ? w[i+1] : 0, hp = (i===0) ? 0 : h[i-1], hn = (i+1 < numF) ? h[i+1] : 0;
+            let Pc = (hp + hc) / 2, Pn = (hc + hn) / 2;
+
+            let pares = [];
+            for (let k=1; k<=4; k++) {
+                let valV = filas[i].querySelector(".e-v"+k).value;
+                if (valV !== "") {
+                    let inF = filas[i].querySelector(".e-f"+k);
+                    let frac = inF.value !== "" ? parseFloat(inF.value) : parseFloat(inF.placeholder);
+                    pares.push({ f: frac, v: parseFloat(valV) });
+                }
+            }
+            if (pares.length === 0) continue;
+
+            pares.sort((a,b) => a.f - b.f); 
+
+            let fronteras = [0];
+            for(let k=0; k < pares.length - 1; k++) fronteras.push((pares[k].f + pares[k+1].f) / 2);
+
+            let txtInfo = `<strong style="color:#8e44ad;">Desglose de Áreas:</strong><br>`;
+            let areaTotalVertical = 0;
+
+            for (let k=0; k < pares.length; k++) {
+                let y1 = fronteras[k] * hc;
+                // CRUCIAL: El último corte debe bajar hasta el fondo real del cauce (9999m asegura llegar al tope irregular)
+                let y2 = (k === pares.length - 1) ? 9999 : fronteras[k+1] * hc;
+                
+                let Ai_izq = (i === 0) ? areaRebanada(wc, 0, hc, y1, y2) : areaRebanada(wc/2, Pc, hc, y1, y2);
+                let Ai_der = (i === lastIdx) ? areaRebanada(wn, 0, hc, y1, y2) : areaRebanada(wn/2, Pn, hc, y1, y2);
+                
+                let Ai = Ai_izq + Ai_der;
+                areaTotalVertical += Ai;
+                
+                txtInfo += `A(${pares[k].f}h): ${Ai.toFixed(4)} m²<br>`;
+
+                Q_tot += Ai * pares[k].v;
+                Cor_tot += Ai * Math.pow(pares[k].v, 3);
+                Bous_tot += Ai * Math.pow(pares[k].v, 2);
+            }
+            filas[i].querySelector(".e-info").innerHTML = txtInfo + `<strong>Total: ${areaTotalVertical.toFixed(4)} m²</strong>`;
+        }
+        mostrarResultados(A_tot, T_tot, P_tot, Q_tot, Cor_tot, Bous_tot, "Resultados");
+    }
+
+    function renum(tbodyId) {
+        let filas = document.querySelectorAll(`#${tbodyId} tr`);
+        for(let i=0; i<filas.length; i++) filas[i].querySelector(".num-tr").innerHTML = `<strong>${i+1}</strong>`;
+    }
+
+    function mostrarResultados(A, T, P, Q, Cor, Bous, titulo) {
+        if(A === 0) { alert("El área es 0, verifica los datos geométricos."); return; }
+        
+        let Vm = Q / A, Rh = A / P, D = A / T;
+        let alpha = Cor / (Math.pow(Vm, 3) * A), beta = Bous / (Math.pow(Vm, 2) * A), froude = Vm / Math.sqrt(9.81 * D);
+
+        document.getElementById("tituloResultados").innerText = titulo;
+        document.getElementById("resA").innerText = A.toFixed(4); document.getElementById("resT").innerText = T.toFixed(4);
+        document.getElementById("resP").innerText = P.toFixed(4); document.getElementById("resRh").innerText = Rh.toFixed(4);
+        document.getElementById("resD").innerText = D.toFixed(4); document.getElementById("resQ").innerText = Q.toFixed(4);
+        document.getElementById("resVm").innerText = Vm.toFixed(4); document.getElementById("resAlpha").innerText = alpha.toFixed(4);
+        document.getElementById("resBeta").innerText = beta.toFixed(4); document.getElementById("resFroude").innerText = froude.toFixed(4);
+        document.getElementById("resRegimen").innerText = (froude < 1) ? "FLUJO SUBCRÍTICO" : "FLUJO SUPERCRÍTICO";
+
+        let panel = document.getElementById("panelResultados");
+        panel.style.display = "block";
+        panel.style.borderLeftColor = titulo.includes("Excel") ? "#8e44ad" : "#2980b9";
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+</script>
+
+</body>
+</html>
